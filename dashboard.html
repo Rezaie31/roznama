@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>داشبورد | روزنما</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div class="dash-wrap">
+  <div class="dash-header">
+    <div>
+      <h1>روزنما</h1>
+      <div class="welcome mono" id="welcome-msg"></div>
+    </div>
+    <button class="btn btn-danger" onclick="logout()">خروج</button>
+  </div>
+
+  <!-- ===== کارهای امروز ===== -->
+  <div class="card">
+    <h2>✅ کارهای امروز</h2>
+    <div id="task-list"></div>
+    <div id="task-empty" class="empty-hint" style="display:none">هنوز کاری اضافه نکردی. یکی پایین اضافه کن.</div>
+    <div class="add-task-row">
+      <input type="text" id="new-task-name" placeholder="مثلاً: یک ساعت ورزش" />
+      <input type="text" id="new-task-target" class="target" placeholder="هدف (اختیاری)" />
+      <button class="btn btn-primary" onclick="addTask()">افزودن</button>
+    </div>
+  </div>
+
+  <!-- ===== نمودارها ===== -->
+  <div class="charts-grid">
+    <div class="card">
+      <h2>📊 پیشرفت امروز</h2>
+      <div class="chart-box"><canvas id="daily-chart"></canvas></div>
+    </div>
+    <div class="card">
+      <h2>📈 روند هفته اخیر</h2>
+      <div class="chart-box"><canvas id="weekly-chart"></canvas></div>
+      <div class="week-ring-wrap">
+        <svg id="week-ring" width="110" height="110" viewBox="0 0 110 110"></svg>
+        <div class="ring-legend" id="ring-legend"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== دفترچه یادداشت ===== -->
+  <div class="card">
+    <h2>📓 دفترچه یادداشت</h2>
+    <div class="note-box" id="yesterday-note-box" style="display:none">
+      <span class="label">yesterday</span>
+      <div id="yesterday-note-text"></div>
+    </div>
+    <textarea class="journal" id="today-note" placeholder="امروز چی گذشت؟ چند خط بنویس..."></textarea>
+    <div class="save-row">
+      <button class="btn btn-primary" onclick="saveJournal()">ذخیره یادداشت امروز</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="config.js"></script>
+<script src="api.js"></script>
+<script src="dashboard.js"></script>
+</body>
+</html>
