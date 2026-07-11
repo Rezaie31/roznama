@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>روزنما | ثبت کارهای روزانه</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<nav class="nav">
+  <div class="brand">روز<span>نما</span></div>
+  <div class="actions">
+    <button class="btn btn-ghost" onclick="openModal('login')">ورود</button>
+    <button class="btn btn-primary" onclick="openModal('register')">ثبت‌نام</button>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="arc-wrap" id="arc-wrap"></div>
+  <div class="hero-content">
+    <div class="eyebrow">daily · weekly · you</div>
+    <h1>هر روز رو بساز،<br />هفته‌هاتو ببین</h1>
+    <p>کارهای روزانه‌ت رو تعریف کن، آخر هر روز بگو انجامش دادی یا نه، و ببین چقدر به برنامه‌ت پایبند بودی — با نمودار روزانه، نمودار هفتگی و یه دفترچه یادداشت که هر روز صبح یادت میاره دیروز چی نوشتی.</p>
+    <button class="btn btn-primary" onclick="openModal('register')">شروع کن</button>
+  </div>
+</section>
+
+<section class="features">
+  <div class="feature">
+    <div class="icon">✅</div>
+    <h3>ثبت روزانه</h3>
+    <p>کارهایی که می‌خوای هر روز انجام بدی رو تعریف کن و آخر هر روز فقط تیک بزن.</p>
+  </div>
+  <div class="feature">
+    <div class="icon">📊</div>
+    <h3>نمودار روزانه و هفتگی</h3>
+    <p>ببین امروز چقدر به برنامه‌ت پایبند بودی، و روند یک هفته‌ی اخیرت چطور بوده.</p>
+  </div>
+  <div class="feature">
+    <div class="icon">📓</div>
+    <h3>دفترچه یادداشت</h3>
+    <p>آخر هر روز چند خط بنویس؛ فردا صبح همون یادداشت دوباره جلوی چشمته.</p>
+  </div>
+</section>
+
+<footer class="site-footer">روزنما — یه دفترچه‌ی ساده برای پایبند موندن به خودت</footer>
+
+<!-- ===== MODAL ===== -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <div class="tabs">
+      <button id="tab-login" onclick="switchTab('login')">ورود</button>
+      <button id="tab-register" onclick="switchTab('register')">ثبت‌نام</button>
+    </div>
+
+    <div id="form-login">
+      <h2>خوش اومدی</h2>
+      <div class="field">
+        <label>نام کاربری</label>
+        <input type="text" id="login-username" autocomplete="username" />
+      </div>
+      <div class="field">
+        <label>رمز عبور</label>
+        <input type="password" id="login-password" autocomplete="current-password" />
+      </div>
+      <div class="error-msg" id="login-error"></div>
+      <button class="btn btn-primary btn-block" onclick="handleLogin()">ورود</button>
+    </div>
+
+    <div id="form-register" style="display:none">
+      <h2>بساز حساب رو</h2>
+      <div class="field">
+        <label>نام کاربری</label>
+        <input type="text" id="register-username" autocomplete="username" />
+      </div>
+      <div class="field">
+        <label>رمز عبور</label>
+        <input type="password" id="register-password" autocomplete="new-password" />
+      </div>
+      <div class="error-msg" id="register-error"></div>
+      <button class="btn btn-primary btn-block" onclick="handleRegister()">ثبت‌نام و ورود</button>
+    </div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="api.js"></script>
+<script src="landing.js"></script>
+</body>
+</html>
