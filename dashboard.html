@@ -14,18 +14,30 @@
       <h1>روزنما</h1>
       <div class="welcome mono" id="welcome-msg"></div>
     </div>
-    <button class="btn btn-danger" onclick="logout()">خروج</button>
+    <div class="actions">
+      <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" aria-label="تغییر حالت روشن/تاریک">🌙</button>
+      <button class="btn btn-danger" onclick="logout()">خروج</button>
+    </div>
   </div>
 
   <!-- ===== کارهای امروز ===== -->
   <div class="card">
     <h2>✅ کارهای امروز</h2>
+
+    <div class="progress-wrap" id="progress-wrap" style="display:none">
+      <div class="progress-label">
+        <span id="progress-text"></span>
+        <span id="progress-pct" class="mono"></span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    </div>
+
     <div id="task-list"></div>
-    <div id="task-empty" class="empty-hint" style="display:none">هنوز کاری اضافه نکردی. یکی پایین اضافه کن.</div>
+    <div id="task-empty" class="empty-hint" style="display:none"><span class="icon">🗒️</span>هنوز کاری اضافه نکردی. یکی پایین اضافه کن.</div>
     <div class="add-task-row">
       <input type="text" id="new-task-name" placeholder="مثلاً: یک ساعت ورزش" />
       <input type="text" id="new-task-target" class="target" placeholder="هدف (اختیاری)" />
-      <button class="btn btn-primary" onclick="addTask()">افزودن</button>
+      <button class="btn btn-primary" id="add-task-btn" onclick="addTask(this)">افزودن</button>
     </div>
   </div>
 
@@ -45,6 +57,24 @@
     </div>
   </div>
 
+  <!-- ===== نمودار ماهانه و سالانه ===== -->
+  <div class="charts-grid">
+    <div class="card">
+      <div class="chart-head">
+        <h2>🗓️ نمودار ماهانه</h2>
+        <input type="month" id="month-picker" class="picker mono" />
+      </div>
+      <div class="chart-box"><canvas id="monthly-chart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="chart-head">
+        <h2>📆 نمودار سالانه</h2>
+        <select id="year-picker" class="picker mono"></select>
+      </div>
+      <div class="chart-box"><canvas id="yearly-chart"></canvas></div>
+    </div>
+  </div>
+
   <!-- ===== دفترچه یادداشت ===== -->
   <div class="card">
     <h2>📓 دفترچه یادداشت</h2>
@@ -54,7 +84,7 @@
     </div>
     <textarea class="journal" id="today-note" placeholder="امروز چی گذشت؟ چند خط بنویس..."></textarea>
     <div class="save-row">
-      <button class="btn btn-primary" onclick="saveJournal()">ذخیره یادداشت امروز</button>
+      <button class="btn btn-primary" onclick="saveJournal(this)">ذخیره یادداشت امروز</button>
     </div>
   </div>
 </div>
