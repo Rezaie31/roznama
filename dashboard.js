@@ -6,22 +6,34 @@ document.getElementById("welcome-msg").textContent = "@" + username;
 
 let tasks = [];
 let todayLogsMap = {}; // taskId -> done
+let logsCache = []; // همه‌ی لاگ‌های امسال تا امروز (یه‌بار می‌گیریم، بعد فیلتر می‌کنیم)
+let cachedYear = new Date().getFullYear();
 let dailyChart, weeklyChart, monthlyChart, yearlyChart;
 
 async function init() {
   updateThemeIcon();
   initPickers();
   renderGreeting();
-  await loadTasks();
-  await loadTodayLogs();
+
+  // یه درخواست واحد به‌جای ۸ تا درخواست جدا، برای سرعت بیشتر
+  const data = await apiCall("getDashboardData", { username });
+  tasks = data.ok ? data.tasks : [];
+  logsCache = data.ok ? data.logs : [];
+
+  const todayKey = dateKey(0);
+  todayLogsMap = {};
+  logsCache
+    .filter((l) => l.date === todayKey)
+    .forEach((l) => (todayLogsMap[l.taskId] = l.done === true || l.done === "TRUE"));
+
   renderTasks();
   renderProgress();
-  await renderDailyChart();
-  await renderWeeklyChart();
-  await renderMonthlyChart();
-  await renderYearlyChart();
-  await renderYesterdayRecap();
-  await loadJournal();
+  renderDailyChart();
+  renderWeeklyChart();
+  renderMonthlyChart();
+  renderYearlyChart();
+  renderYesterdayRecap();
+  renderJournal(data.todayNote || "", data.yesterdayNote || "", data.yesterdayResponse || "");
 
   document.getElementById("loading-screen").classList.add("hide");
   document.getElementById("dash-wrap").classList.add("ready");
@@ -39,7 +51,7 @@ function renderGreeting() {
 }
 
 // ===================== YESTERDAY RECAP =====================
-async function renderYesterdayRecap() {
+function renderYesterdayRecap() {
   const list = document.getElementById("yesterday-tasks-list");
   const empty = document.getElementById("yesterday-tasks-empty");
   list.innerHTML = "";
@@ -51,10 +63,10 @@ async function renderYesterdayRecap() {
   empty.style.display = "none";
 
   const yDate = dateKey(-1);
-  const res = await apiCall("getLogs", { username, startDate: yDate, endDate: yDate });
-  const logs = res.ok ? res.logs : [];
   const doneMap = {};
-  logs.forEach((l) => (doneMap[l.taskId] = l.done === true || l.done === "TRUE"));
+  logsCache
+    .filter((l) => l.date === yDate)
+    .forEach((l) => (doneMap[l.taskId] = l.done === true || l.done === "TRUE"));
 
   tasks.forEach((task) => {
     const done = !!doneMap[task.taskId];
@@ -113,20 +125,6 @@ function drawTodayRing(pct) {
 }
 
 // ===================== TASKS =====================
-async function loadTasks() {
-  const res = await apiCall("getTasks", { username });
-  tasks = res.ok ? res.tasks : [];
-}
-
-async function loadTodayLogs() {
-  const today = dateKey(0);
-  const res = await apiCall("getLogs", { username, startDate: today, endDate: today });
-  todayLogsMap = {};
-  if (res.ok) {
-    res.logs.forEach((l) => (todayLogsMap[l.taskId] = l.done === true || l.done === "TRUE"));
-  }
-}
-
 function renderTasks() {
   const list = document.getElementById("task-list");
   const empty = document.getElementById("task-empty");
@@ -159,16 +157,29 @@ function renderTasks() {
   });
 }
 
+function upsertLogCache(date, taskId, done) {
+  const existing = logsCache.find((l) => l.date === date && l.taskId === taskId);
+  if (existing) {
+    existing.done = done;
+  } else {
+    logsCache.push({ date, taskId, done });
+  }
+}
+
 async function toggleTask(taskId) {
   const newDone = !todayLogsMap[taskId];
   todayLogsMap[taskId] = newDone;
+  const todayKey = dateKey(0);
+  upsertLogCache(todayKey, taskId, newDone);
+
   renderTasks();
   renderProgress();
-  await apiCall("logTask", { username, date: dateKey(0), taskId, done: newDone });
-  await renderDailyChart();
-  await renderWeeklyChart();
-  await renderMonthlyChart();
-  await renderYearlyChart();
+  renderDailyChart();
+  renderWeeklyChart();
+  renderMonthlyChart();
+  renderYearlyChart();
+
+  await apiCall("logTask", { username, date: todayKey, taskId, done: newDone });
 }
 
 async function addTask(btn) {
@@ -178,18 +189,17 @@ async function addTask(btn) {
   if (!taskName) return;
   setLoading(btn, "در حال افزودن...");
   try {
-    await apiCall("addTask", { username, taskName, targetLabel: targetInput.value.trim() });
+    const res = await apiCall("addTask", { username, taskName, targetLabel: targetInput.value.trim() });
+    tasks.push({ taskId: res.taskId, taskName, targetLabel: targetInput.value.trim() });
     nameInput.value = "";
     targetInput.value = "";
-    await loadTasks();
-    await loadTodayLogs();
     renderTasks();
     renderProgress();
-    await renderDailyChart();
-    await renderWeeklyChart();
-    await renderMonthlyChart();
-    await renderYearlyChart();
-    await renderYesterdayRecap();
+    renderDailyChart();
+    renderWeeklyChart();
+    renderMonthlyChart();
+    renderYearlyChart();
+    renderYesterdayRecap();
     showToast("کار جدید اضافه شد");
   } catch (e) {
     showToast("خطا در ارتباط با سرور", "error");
@@ -200,15 +210,14 @@ async function addTask(btn) {
 async function removeTask(taskId) {
   if (!confirm("این کار حذف بشه؟")) return;
   await apiCall("deleteTask", { username, taskId });
-  await loadTasks();
-  await loadTodayLogs();
+  tasks = tasks.filter((t) => t.taskId !== taskId);
   renderTasks();
   renderProgress();
-  await renderDailyChart();
-  await renderWeeklyChart();
-  await renderMonthlyChart();
-  await renderYearlyChart();
-  await renderYesterdayRecap();
+  renderDailyChart();
+  renderWeeklyChart();
+  renderMonthlyChart();
+  renderYearlyChart();
+  renderYesterdayRecap();
 }
 
 // ===================== MONTHLY CHART =====================
@@ -243,10 +252,16 @@ async function getMonthData() {
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth();
   const lastDay = isCurrentMonth ? now.getDate() : daysInMonth_(year, month);
 
-  const start = `${year}-${String(month + 1).padStart(2, "0")}-01`;
-  const end = `${year}-${String(month + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
-  const res = await apiCall("getLogs", { username, startDate: start, endDate: end });
-  const logs = res.ok ? res.logs : [];
+  // اگه سالش همون سالیه که تو حافظه داریم، از حافظه فیلتر کن (بدون درخواست جدید)
+  let logs;
+  if (year === cachedYear) {
+    logs = logsCache;
+  } else {
+    const start = `${year}-${String(month + 1).padStart(2, "0")}-01`;
+    const end = `${year}-${String(month + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+    const res = await apiCall("getLogs", { username, startDate: start, endDate: end });
+    logs = res.ok ? res.logs : [];
+  }
 
   const days = [];
   for (let d = 1; d <= lastDay; d++) {
@@ -278,6 +293,7 @@ async function renderMonthlyChart() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      animation: { duration: 500 },
       plugins: { legend: { display: false } },
       scales: {
         y: { min: 0, max: 100, ticks: { callback: (v) => v + "%" } },
@@ -296,10 +312,15 @@ async function getYearData() {
   const isCurrentYear = year === now.getFullYear();
   const lastMonth = isCurrentYear ? now.getMonth() : 11;
 
-  const start = `${year}-01-01`;
-  const end = isCurrentYear ? dateKey(0) : `${year}-12-31`;
-  const res = await apiCall("getLogs", { username, startDate: start, endDate: end });
-  const logs = res.ok ? res.logs : [];
+  let logs;
+  if (year === cachedYear) {
+    logs = logsCache;
+  } else {
+    const start = `${year}-01-01`;
+    const end = isCurrentYear ? dateKey(0) : `${year}-12-31`;
+    const res = await apiCall("getLogs", { username, startDate: start, endDate: end });
+    logs = res.ok ? res.logs : [];
+  }
 
   const months = [];
   for (let m = 0; m <= lastMonth; m++) {
@@ -332,6 +353,7 @@ async function renderYearlyChart() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      animation: { duration: 500 },
       plugins: { legend: { display: false } },
       scales: { y: { min: 0, max: 100, ticks: { callback: (v) => v + "%" } } },
     },
@@ -339,7 +361,7 @@ async function renderYearlyChart() {
 }
 
 // ===================== DAILY CHART =====================
-async function renderDailyChart() {
+function renderDailyChart() {
   const ctx = document.getElementById("daily-chart");
   const labels = tasks.map((t) => t.taskName);
   const data = tasks.map((t) => (todayLogsMap[t.taskId] ? 1 : 0));
@@ -360,6 +382,7 @@ async function renderDailyChart() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      animation: { duration: 500 },
       plugins: { legend: { display: false } },
       scales: {
         y: { min: 0, max: 1, ticks: { stepSize: 1, callback: (v) => (v === 1 ? "انجام شد" : "نشد") } },
@@ -369,16 +392,11 @@ async function renderDailyChart() {
 }
 
 // ===================== WEEKLY CHART + RING =====================
-async function getWeekData() {
-  const start = dateKey(-6);
-  const end = dateKey(0);
-  const res = await apiCall("getLogs", { username, startDate: start, endDate: end });
-  const logs = res.ok ? res.logs : [];
-
+function getWeekData() {
   const days = [];
   for (let i = 6; i >= 0; i--) {
     const key = dateKey(-i);
-    const dayLogs = logs.filter((l) => l.date === key && (l.done === true || l.done === "TRUE"));
+    const dayLogs = logsCache.filter((l) => l.date === key && (l.done === true || l.done === "TRUE"));
     const total = tasks.length;
     const pct = total > 0 ? Math.round((dayLogs.length / total) * 100) : 0;
     days.push({ key, label: weekdayLabelFa(key), pct });
@@ -386,8 +404,8 @@ async function getWeekData() {
   return days;
 }
 
-async function renderWeeklyChart() {
-  const days = await getWeekData();
+function renderWeeklyChart() {
+  const days = getWeekData();
   const ctx = document.getElementById("weekly-chart");
 
   if (weeklyChart) weeklyChart.destroy();
@@ -409,6 +427,7 @@ async function renderWeeklyChart() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      animation: { duration: 500 },
       plugins: { legend: { display: false } },
       scales: { y: { min: 0, max: 100, ticks: { callback: (v) => v + "%" } } },
     },
@@ -470,23 +489,21 @@ function arcPath(cx, cy, r, startAngle, endAngle) {
 }
 
 // ===================== JOURNAL + REMINDER =====================
-async function loadJournal() {
-  const yDate = dateKey(-1);
-  const yesterdayRes = await apiCall("getNote", { username, date: yDate });
+function renderJournal(todayNote, yesterdayNote, yesterdayResponse) {
   const panel = document.getElementById("reminder-panel");
   const textEl = document.getElementById("reminder-note-text");
   const actions = document.getElementById("reminder-actions");
   const resultEl = document.getElementById("reminder-result");
 
-  if (yesterdayRes.ok && yesterdayRes.note) {
+  if (yesterdayNote) {
     panel.style.display = "block";
-    textEl.textContent = yesterdayRes.note;
+    textEl.textContent = yesterdayNote;
 
-    if (yesterdayRes.response === "accepted" || yesterdayRes.response === "rejected") {
+    if (yesterdayResponse === "accepted" || yesterdayResponse === "rejected") {
       actions.style.display = "none";
       resultEl.style.display = "block";
       resultEl.textContent =
-        yesterdayRes.response === "accepted" ? "قبول کردی — امروز انجامش بده ✓" : "رد کردی — مشکلی نیست، شاید دفعه‌ی بعد";
+        yesterdayResponse === "accepted" ? "قبول کردی — امروز انجامش بده ✓" : "رد کردی — مشکلی نیست، شاید دفعه‌ی بعد";
     } else {
       actions.style.display = "flex";
       resultEl.style.display = "none";
@@ -495,9 +512,8 @@ async function loadJournal() {
     panel.style.display = "none";
   }
 
-  const todayRes = await apiCall("getNote", { username, date: dateKey(0) });
-  if (todayRes.ok && todayRes.note) {
-    document.getElementById("today-note").value = todayRes.note;
+  if (todayNote) {
+    document.getElementById("today-note").value = todayNote;
   }
 }
 
