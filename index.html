@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>روزنما | ثبت کارهای روزانه</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg" />
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -19,11 +20,18 @@
 
 <section class="hero">
   <div class="arc-wrap" id="arc-wrap"></div>
+  <div class="particles" id="particles"></div>
   <div class="hero-content">
     <div class="eyebrow">daily · weekly · you</div>
     <h1>هر روز رو بساز،<br />هفته‌هاتو ببین</h1>
     <p>کارهای روزانه‌ت رو تعریف کن، آخر هر روز بگو انجامش دادی یا نه، و ببین چقدر به برنامه‌ت پایبند بودی — با نمودار روزانه، نمودار هفتگی و یه دفترچه یادداشت که هر روز صبح یادت میاره دیروز چی نوشتی.</p>
     <button class="btn btn-primary" onclick="openModal('register')">شروع کن</button>
+
+    <div class="stats">
+      <div class="stat"><div class="num" data-count="4">0</div><div class="label">نمودار پیشرفت</div></div>
+      <div class="stat"><div class="num">∞</div><div class="label">کار نامحدود</div></div>
+      <div class="stat"><div class="num" data-count="100" data-suffix="%">0</div><div class="label">رایگان</div></div>
+    </div>
 
     <div class="hero-preview">
       <div class="mock-row"><span class="mock-check on">✓</span> یک ساعت ورزش</div>
