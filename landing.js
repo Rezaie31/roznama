@@ -46,6 +46,7 @@ async function handleRegister(btn) {
     window.location.href = "dashboard.html";
   } catch (e) {
     errEl.textContent = "اتصال به سرور برقرار نشد. آدرس APPS_SCRIPT_URL رو چک کن.";
+    showToast("خطا در اتصال به سرور", "error");
     clearLoading(btn);
   }
 }
@@ -90,6 +91,72 @@ document.querySelectorAll(".reveal").forEach((el) => {
     },
     { threshold: 0.15 }
   ).observe(el);
+});
+
+// ===== شماره‌گذاری برای تاخیر پلکانی =====
+document.querySelectorAll(".steps-grid .step, .features .feature").forEach((el, i) => {
+  el.style.setProperty("--i", i);
+});
+
+// ===== ذرات شناور تو هیرو =====
+(function makeParticles() {
+  const wrap = document.getElementById("particles");
+  const count = 22;
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement("div");
+    p.className = "particle";
+    const size = 2 + Math.random() * 3;
+    p.style.width = size + "px";
+    p.style.height = size + "px";
+    p.style.left = Math.random() * 100 + "%";
+    p.style.top = 40 + Math.random() * 55 + "%";
+    p.style.animationDuration = 6 + Math.random() * 8 + "s";
+    p.style.animationDelay = Math.random() * 8 + "s";
+    wrap.appendChild(p);
+  }
+})();
+
+// ===== شمارش انیمیشنی آمار =====
+(function animateStats() {
+  const nums = document.querySelectorAll(".stat .num[data-count]");
+  if (!nums.length) return;
+  const observer = new IntersectionObserver(
+    (entries, obs) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        const el = entry.target;
+        const target = Number(el.dataset.count);
+        const suffix = el.dataset.suffix || "";
+        const duration = 1200;
+        const start = performance.now();
+        function tick(now) {
+          const progress = Math.min((now - start) / duration, 1);
+          const eased = 1 - Math.pow(1 - progress, 3);
+          el.textContent = Math.round(target * eased) + suffix;
+          if (progress < 1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+        obs.unobserve(el);
+      });
+    },
+    { threshold: 0.5 }
+  );
+  nums.forEach((el) => observer.observe(el));
+})();
+
+// ===== افکت تیلت سه‌بعدی رو کارت‌های فیچر =====
+document.querySelectorAll(".feature").forEach((card) => {
+  card.addEventListener("mousemove", (e) => {
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const rotateX = ((y - rect.height / 2) / rect.height) * -10;
+    const rotateY = ((x - rect.width / 2) / rect.width) * 10;
+    card.style.transform = `translateY(-6px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+  });
+  card.addEventListener("mouseleave", () => {
+    card.style.transform = "";
+  });
 });
 
 // ===== انیمیشن قوس روز (خورشید که از افق طلوع تا غروب حرکت می‌کنه) =====
