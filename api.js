@@ -81,3 +81,38 @@ function setSession(username) {
 function clearSession() {
   localStorage.removeItem("dt_username");
 }
+
+// ===== نوتیفیکیشن‌های شناور (Toast) =====
+function showToast(message, type = "") {
+  let stack = document.getElementById("toast-stack");
+  if (!stack) {
+    stack = document.createElement("div");
+    stack.id = "toast-stack";
+    document.body.appendChild(stack);
+  }
+  const toast = document.createElement("div");
+  toast.className = "toast" + (type ? " " + type : "");
+  toast.textContent = message;
+  stack.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add("show"));
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 300);
+  }, 2600);
+}
+
+// ===== جشن کوچیک (Confetti) =====
+function launchConfetti() {
+  const colors = ["#2f7a5c", "#e08a3c", "#ffd98e", "#3fae82", "#f2a65a"];
+  const count = 60;
+  for (let i = 0; i < count; i++) {
+    const piece = document.createElement("div");
+    piece.className = "confetti-piece";
+    piece.style.left = Math.random() * 100 + "vw";
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.animationDelay = Math.random() * 0.4 + "s";
+    piece.style.borderRadius = Math.random() > 0.5 ? "50%" : "2px";
+    document.body.appendChild(piece);
+    setTimeout(() => piece.remove(), 3200);
+  }
+}
