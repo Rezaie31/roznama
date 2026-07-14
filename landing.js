@@ -98,10 +98,14 @@ document.querySelectorAll(".steps-grid .step, .features .feature").forEach((el, 
   el.style.setProperty("--i", i);
 });
 
-// ===== ذرات شناور تو هیرو =====
+// ===== ذرات شناور تو هیرو (کمتر رو موبایل، خاموش با کاهش حرکت) =====
+const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const isMobile = window.innerWidth < 600;
+
 (function makeParticles() {
+  if (prefersReducedMotion) return;
   const wrap = document.getElementById("particles");
-  const count = 22;
+  const count = isMobile ? 8 : 22;
   for (let i = 0; i < count; i++) {
     const p = document.createElement("div");
     p.className = "particle";
@@ -144,20 +148,22 @@ document.querySelectorAll(".steps-grid .step, .features .feature").forEach((el, 
   nums.forEach((el) => observer.observe(el));
 })();
 
-// ===== افکت تیلت سه‌بعدی رو کارت‌های فیچر =====
-document.querySelectorAll(".feature").forEach((card) => {
-  card.addEventListener("mousemove", (e) => {
-    const rect = card.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const rotateX = ((y - rect.height / 2) / rect.height) * -10;
-    const rotateY = ((x - rect.width / 2) / rect.width) * 10;
-    card.style.transform = `translateY(-6px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+// ===== افکت تیلت سه‌بعدی رو کارت‌های فیچر (فقط دسکتاپ) =====
+if (!isMobile) {
+  document.querySelectorAll(".feature").forEach((card) => {
+    card.addEventListener("mousemove", (e) => {
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const rotateX = ((y - rect.height / 2) / rect.height) * -10;
+      const rotateY = ((x - rect.width / 2) / rect.width) * 10;
+      card.style.transform = `translateY(-6px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+    });
+    card.addEventListener("mouseleave", () => {
+      card.style.transform = "";
+    });
   });
-  card.addEventListener("mouseleave", () => {
-    card.style.transform = "";
-  });
-});
+}
 
 // ===== انیمیشن قوس روز (خورشید که از افق طلوع تا غروب حرکت می‌کنه) =====
 (function drawArc() {
@@ -186,14 +192,37 @@ document.querySelectorAll(".feature").forEach((card) => {
   wrap.appendChild(svg);
 
   const pathLen = path.getTotalLength();
+
+  // رو موبایل یا وقتی کاربر ترجیح می‌ده حرکت کمتری ببینه، فقط ثابت وسط قوس بذارش
+  if (prefersReducedMotion || isMobile) {
+    const pt = path.getPointAtLength(pathLen * 0.5);
+    sun.setAttribute("cx", pt.x);
+    sun.setAttribute("cy", pt.y);
+    return;
+  }
+
   let t = 0;
+  let running = true;
+  let rafId;
   function animate() {
+    if (!running) return;
     t += 0.0016;
     if (t > 1) t = 0;
     const pt = path.getPointAtLength(pathLen * t);
     sun.setAttribute("cx", pt.x);
     sun.setAttribute("cy", pt.y);
-    requestAnimationFrame(animate);
+    rafId = requestAnimationFrame(animate);
   }
   animate();
+
+  // وقتی تب مخفیه، انیمیشن رو متوقف کن تا CPU/باتری هدر نره
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      running = false;
+      cancelAnimationFrame(rafId);
+    } else if (!running) {
+      running = true;
+      animate();
+    }
+  });
 })();
