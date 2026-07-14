@@ -4,17 +4,27 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>داشبورد | روزنما</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg" />
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-<div class="dash-wrap">
+<div id="loading-screen">
+  <div class="logo-pulse"></div>
+  <div class="logo-text">در حال بارگذاری روزنما...</div>
+</div>
+
+<div class="dash-wrap" id="dash-wrap">
   <div class="dash-header">
     <div>
       <h1>روزنما</h1>
       <div class="welcome mono" id="welcome-msg"></div>
     </div>
     <div class="actions">
+      <div class="today-ring-wrap">
+        <svg id="today-ring" width="40" height="40" viewBox="0 0 40 40"></svg>
+        <span class="ring-num" id="today-ring-num"></span>
+      </div>
       <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" aria-label="تغییر حالت روشن/تاریک">🌙</button>
       <button class="btn btn-danger" onclick="logout()">خروج</button>
     </div>
