@@ -11,6 +11,7 @@
 <nav class="nav">
   <div class="brand">روز<span>نما</span></div>
   <div class="actions">
+    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" aria-label="تغییر حالت روشن/تاریک">🌙</button>
     <button class="btn btn-ghost" onclick="openModal('login')">ورود</button>
     <button class="btn btn-primary" onclick="openModal('register')">ثبت‌نام</button>
   </div>
@@ -23,10 +24,41 @@
     <h1>هر روز رو بساز،<br />هفته‌هاتو ببین</h1>
     <p>کارهای روزانه‌ت رو تعریف کن، آخر هر روز بگو انجامش دادی یا نه، و ببین چقدر به برنامه‌ت پایبند بودی — با نمودار روزانه، نمودار هفتگی و یه دفترچه یادداشت که هر روز صبح یادت میاره دیروز چی نوشتی.</p>
     <button class="btn btn-primary" onclick="openModal('register')">شروع کن</button>
+
+    <div class="hero-preview">
+      <div class="mock-row"><span class="mock-check on">✓</span> یک ساعت ورزش</div>
+      <div class="mock-row"><span class="mock-check on">✓</span> ۳۰ دقیقه مطالعه</div>
+      <div class="mock-row"><span class="mock-check off"></span> نوشتن یادداشت روزانه</div>
+      <div class="mock-bars">
+        <span style="height:40%"></span><span style="height:70%"></span><span style="height:55%"></span>
+        <span style="height:90%"></span><span style="height:30%"></span><span style="height:65%"></span><span style="height:80%"></span>
+      </div>
+    </div>
   </div>
 </section>
 
-<section class="features">
+<section class="steps reveal">
+  <h2>چطور کار می‌کنه</h2>
+  <div class="steps-grid">
+    <div class="step">
+      <div class="num">۱</div>
+      <h3>ثبت‌نام کن</h3>
+      <p>با یه نام کاربری و رمز عبور مخصوص خودت، حساب بساز.</p>
+    </div>
+    <div class="step">
+      <div class="num">۲</div>
+      <h3>کارهاتو تعریف کن</h3>
+      <p>هر کاری که می‌خوای هر روز انجام بدی رو اضافه کن.</p>
+    </div>
+    <div class="step">
+      <div class="num">۳</div>
+      <h3>پیشرفتتو ببین</h3>
+      <p>آخر هر روز تیک بزن و نمودار روزانه و هفتگیتو تماشا کن.</p>
+    </div>
+  </div>
+</section>
+
+<section class="features reveal">
   <div class="feature">
     <div class="icon">✅</div>
     <h3>ثبت روزانه</h3>
@@ -66,7 +98,7 @@
         <input type="password" id="login-password" autocomplete="current-password" />
       </div>
       <div class="error-msg" id="login-error"></div>
-      <button class="btn btn-primary btn-block" onclick="handleLogin()">ورود</button>
+      <button class="btn btn-primary btn-block" onclick="handleLogin(this)">ورود</button>
     </div>
 
     <div id="form-register" style="display:none">
@@ -80,7 +112,7 @@
         <input type="password" id="register-password" autocomplete="new-password" />
       </div>
       <div class="error-msg" id="register-error"></div>
-      <button class="btn btn-primary btn-block" onclick="handleRegister()">ثبت‌نام و ورود</button>
+      <button class="btn btn-primary btn-block" onclick="handleRegister(this)">ثبت‌نام و ورود</button>
     </div>
   </div>
 </div>
