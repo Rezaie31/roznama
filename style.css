@@ -246,6 +246,63 @@ textarea.journal{
 
 .empty-hint{ color: var(--muted); font-size: 14px; text-align:center; padding: 20px 0; }
 
+/* ===== WELCOME HERO (yesterday recap + reminder) ===== */
+.welcome-hero{
+  position: relative; overflow:hidden; border-radius: 22px; margin-bottom: 28px;
+  background: linear-gradient(135deg, rgba(47,122,92,0.12), rgba(224,138,60,0.12));
+  border: 1px solid var(--line); box-shadow: var(--shadow-lg);
+}
+.welcome-hero-glow{
+  position:absolute; width: 320px; height: 320px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(224,138,60,0.32), transparent 70%);
+  top: -130px; right: -90px; pointer-events:none;
+  animation: floatGlow 11s ease-in-out infinite;
+}
+@keyframes floatGlow{ 0%,100%{ transform: translate(0,0); } 50%{ transform: translate(-24px, 26px); } }
+.welcome-hero-inner{ position:relative; padding: 30px; }
+.greeting{ font-size: 21px; margin: 0 0 20px; }
+.hero-grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+@media (max-width: 720px){ .hero-grid{ grid-template-columns: 1fr; } }
+.hero-panel{ background: var(--paper-2); border:1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+.panel-label{ font-family:'IBM Plex Mono', monospace; direction:ltr; unicode-bidi:isolate; font-size: 11px; text-transform:uppercase; letter-spacing:.08em; color: var(--muted); margin-bottom: 12px; }
+.yesterday-tasks{ display:flex; flex-direction:column; gap:10px; }
+.y-task-row{ display:flex; align-items:center; gap:10px; font-size:14px; }
+.y-task-row .mark{ width:20px; height:20px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:12px; flex-shrink:0; }
+.y-task-row .mark.done{ background: var(--forest); color:#fff; }
+.y-task-row .mark.missed{ background: rgba(179,67,47,0.15); color: var(--danger); }
+.reminder-text{ font-size: 14px; line-height:1.9; margin: 0 0 16px; color: var(--ink); }
+.reminder-actions{ display:flex; gap: 10px; flex-wrap:wrap; }
+.reminder-actions .btn{ font-size: 13px; padding: 10px 18px; }
+.reminder-result{ font-size:13px; color: var(--muted); }
+
+/* ===== WIGGLE HOVER (icons) ===== */
+.wiggle-hover{ display:inline-block; transition: transform .2s ease; }
+.wiggle-hover:hover{ animation: wiggle .45s ease; }
+@keyframes wiggle{
+  0%,100%{ transform: rotate(0deg) scale(1); }
+  25%{ transform: rotate(-10deg) scale(1.18); }
+  75%{ transform: rotate(10deg) scale(1.18); }
+}
+
+/* ===== MOBILE: header reorder + lighter effects ===== */
+@media (max-width: 600px){
+  .dash-header{ flex-direction: column; align-items: stretch; }
+  .dash-header > div:first-child{ order: 1; }
+  .dash-header .actions{ order: 2; justify-content: space-between; }
+  .welcome-hero-inner{ padding: 22px; }
+  .welcome-hero-glow{ display:none; }
+}
+
+/* ===== ACCESSIBILITY / PERFORMANCE: respect reduced motion ===== */
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* ===== LOADING SCREEN (dashboard) ===== */
 #loading-screen{
   position: fixed; inset:0; background: var(--paper); z-index: 500;
