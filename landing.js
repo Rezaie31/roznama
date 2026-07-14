@@ -20,7 +20,7 @@ function switchTab(tab) {
   document.getElementById("form-register").style.display = isLogin ? "none" : "block";
 }
 
-async function handleRegister() {
+async function handleRegister(btn) {
   const username = document.getElementById("register-username").value.trim();
   const password = document.getElementById("register-password").value;
   const errEl = document.getElementById("register-error");
@@ -33,21 +33,24 @@ async function handleRegister() {
     errEl.textContent = "رمز عبور باید حداقل ۴ کاراکتر باشه";
     return;
   }
+  setLoading(btn, "در حال ثبت‌نام...");
   try {
     const passwordHash = await hashPassword(password);
     const res = await apiCall("register", { username, passwordHash });
     if (!res.ok) {
       errEl.textContent = res.error || "خطایی پیش اومد";
+      clearLoading(btn);
       return;
     }
     setSession(username);
     window.location.href = "dashboard.html";
   } catch (e) {
     errEl.textContent = "اتصال به سرور برقرار نشد. آدرس APPS_SCRIPT_URL رو چک کن.";
+    clearLoading(btn);
   }
 }
 
-async function handleLogin() {
+async function handleLogin(btn) {
   const username = document.getElementById("login-username").value.trim();
   const password = document.getElementById("login-password").value;
   const errEl = document.getElementById("login-error");
@@ -56,19 +59,38 @@ async function handleLogin() {
     errEl.textContent = "نام کاربری و رمز عبور رو پر کن";
     return;
   }
+  setLoading(btn, "در حال ورود...");
   try {
     const passwordHash = await hashPassword(password);
     const res = await apiCall("login", { username, passwordHash });
     if (!res.ok) {
       errEl.textContent = res.error || "خطایی پیش اومد";
+      clearLoading(btn);
       return;
     }
     setSession(username);
     window.location.href = "dashboard.html";
   } catch (e) {
     errEl.textContent = "اتصال به سرور برقرار نشد. آدرس APPS_SCRIPT_URL رو چک کن.";
+    clearLoading(btn);
   }
 }
+
+// ===== آیکون تم + انیمیشن ظاهر شدن هنگام اسکرول =====
+updateThemeIcon();
+document.querySelectorAll(".reveal").forEach((el) => {
+  new IntersectionObserver(
+    (entries, obs) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("show");
+          obs.unobserve(entry.target);
+        }
+      });
+    },
+    { threshold: 0.15 }
+  ).observe(el);
+});
 
 // ===== انیمیشن قوس روز (خورشید که از افق طلوع تا غروب حرکت می‌کنه) =====
 (function drawArc() {
