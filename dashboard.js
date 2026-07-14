@@ -11,6 +11,7 @@ let dailyChart, weeklyChart, monthlyChart, yearlyChart;
 async function init() {
   updateThemeIcon();
   initPickers();
+  renderGreeting();
   await loadTasks();
   await loadTodayLogs();
   renderTasks();
@@ -19,10 +20,49 @@ async function init() {
   await renderWeeklyChart();
   await renderMonthlyChart();
   await renderYearlyChart();
+  await renderYesterdayRecap();
   await loadJournal();
 
   document.getElementById("loading-screen").classList.add("hide");
   document.getElementById("dash-wrap").classList.add("ready");
+}
+
+function renderGreeting() {
+  const hour = new Date().getHours();
+  let salute = "سلام";
+  if (hour < 5) salute = "شب بخیر";
+  else if (hour < 12) salute = "صبح بخیر";
+  else if (hour < 17) salute = "ظهر بخیر";
+  else if (hour < 21) salute = "عصر بخیر";
+  else salute = "شب بخیر";
+  document.getElementById("greeting-text").textContent = `${salute}، ${username} 👋`;
+}
+
+// ===================== YESTERDAY RECAP =====================
+async function renderYesterdayRecap() {
+  const list = document.getElementById("yesterday-tasks-list");
+  const empty = document.getElementById("yesterday-tasks-empty");
+  list.innerHTML = "";
+
+  if (tasks.length === 0) {
+    empty.style.display = "block";
+    return;
+  }
+  empty.style.display = "none";
+
+  const yDate = dateKey(-1);
+  const res = await apiCall("getLogs", { username, startDate: yDate, endDate: yDate });
+  const logs = res.ok ? res.logs : [];
+  const doneMap = {};
+  logs.forEach((l) => (doneMap[l.taskId] = l.done === true || l.done === "TRUE"));
+
+  tasks.forEach((task) => {
+    const done = !!doneMap[task.taskId];
+    const row = document.createElement("div");
+    row.className = "y-task-row";
+    row.innerHTML = `<span class="mark ${done ? "done" : "missed"}">${done ? "✓" : "×"}</span><span>${escapeHtml(task.taskName)}</span>`;
+    list.appendChild(row);
+  });
 }
 
 let wasFullyDone = false;
@@ -149,6 +189,7 @@ async function addTask(btn) {
     await renderWeeklyChart();
     await renderMonthlyChart();
     await renderYearlyChart();
+    await renderYesterdayRecap();
     showToast("کار جدید اضافه شد");
   } catch (e) {
     showToast("خطا در ارتباط با سرور", "error");
@@ -167,6 +208,7 @@ async function removeTask(taskId) {
   await renderWeeklyChart();
   await renderMonthlyChart();
   await renderYearlyChart();
+  await renderYesterdayRecap();
 }
 
 // ===================== MONTHLY CHART =====================
@@ -427,20 +469,45 @@ function arcPath(cx, cy, r, startAngle, endAngle) {
   return `M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2}`;
 }
 
-// ===================== JOURNAL =====================
+// ===================== JOURNAL + REMINDER =====================
 async function loadJournal() {
-  const yesterdayRes = await apiCall("getNote", { username, date: dateKey(-1) });
-  const box = document.getElementById("yesterday-note-box");
-  const textEl = document.getElementById("yesterday-note-text");
+  const yDate = dateKey(-1);
+  const yesterdayRes = await apiCall("getNote", { username, date: yDate });
+  const panel = document.getElementById("reminder-panel");
+  const textEl = document.getElementById("reminder-note-text");
+  const actions = document.getElementById("reminder-actions");
+  const resultEl = document.getElementById("reminder-result");
+
   if (yesterdayRes.ok && yesterdayRes.note) {
-    box.style.display = "block";
-    textEl.textContent = "دیروز این یادداشت‌ها رو داشتی — یادت باشه طبق برنامه پیش بری: " + yesterdayRes.note;
+    panel.style.display = "block";
+    textEl.textContent = yesterdayRes.note;
+
+    if (yesterdayRes.response === "accepted" || yesterdayRes.response === "rejected") {
+      actions.style.display = "none";
+      resultEl.style.display = "block";
+      resultEl.textContent =
+        yesterdayRes.response === "accepted" ? "قبول کردی — امروز انجامش بده ✓" : "رد کردی — مشکلی نیست، شاید دفعه‌ی بعد";
+    } else {
+      actions.style.display = "flex";
+      resultEl.style.display = "none";
+    }
+  } else {
+    panel.style.display = "none";
   }
 
   const todayRes = await apiCall("getNote", { username, date: dateKey(0) });
   if (todayRes.ok && todayRes.note) {
     document.getElementById("today-note").value = todayRes.note;
   }
+}
+
+async function respondToNote(choice) {
+  await apiCall("saveNoteResponse", { username, date: dateKey(-1), response: choice });
+  document.getElementById("reminder-actions").style.display = "none";
+  const resultEl = document.getElementById("reminder-result");
+  resultEl.style.display = "block";
+  resultEl.textContent = choice === "accepted" ? "قبول کردی — امروز انجامش بده ✓" : "رد کردی — مشکلی نیست، شاید دفعه‌ی بعد";
+  showToast(choice === "accepted" ? "عالیه، موفق باشی 💪" : "باشه، هروقت خواستی");
 }
 
 async function saveJournal(btn) {
