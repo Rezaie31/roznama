@@ -20,12 +20,23 @@ async function init() {
   await renderMonthlyChart();
   await renderYearlyChart();
   await loadJournal();
+
+  document.getElementById("loading-screen").classList.add("hide");
+  document.getElementById("dash-wrap").classList.add("ready");
 }
+
+let wasFullyDone = false;
+let firstProgressRender = true;
 
 function renderProgress() {
   const wrap = document.getElementById("progress-wrap");
+  const ringNum = document.getElementById("today-ring-num");
+  const ring = document.getElementById("today-ring");
+
   if (tasks.length === 0) {
     wrap.style.display = "none";
+    ring.innerHTML = "";
+    ringNum.textContent = "";
     return;
   }
   const doneCount = tasks.filter((t) => todayLogsMap[t.taskId]).length;
@@ -34,6 +45,31 @@ function renderProgress() {
   document.getElementById("progress-text").textContent = `${doneCount} از ${tasks.length} کار انجام شده`;
   document.getElementById("progress-pct").textContent = pct + "%";
   document.getElementById("progress-fill").style.width = pct + "%";
+
+  drawTodayRing(pct);
+  ringNum.textContent = pct + "%";
+
+  const fullyDone = doneCount === tasks.length;
+  if (fullyDone && !wasFullyDone && !firstProgressRender) {
+    launchConfetti();
+    showToast("همه‌ی کارهای امروز انجام شد! 🎉", "success");
+  }
+  wasFullyDone = fullyDone;
+  firstProgressRender = false;
+}
+
+function drawTodayRing(pct) {
+  const svg = document.getElementById("today-ring");
+  const cx = 20, cy = 20, r = 16, strokeW = 4;
+  const circumference = 2 * Math.PI * r;
+  const offset = circumference * (1 - pct / 100);
+  const color = pct >= 100 ? "#2f7a5c" : "#e08a3c";
+  svg.innerHTML = `
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--line)" stroke-width="${strokeW}" />
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="${strokeW}"
+      stroke-linecap="round" stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"
+      transform="rotate(-90 ${cx} ${cy})" style="transition: stroke-dashoffset .5s ease" />
+  `;
 }
 
 // ===================== TASKS =====================
@@ -101,17 +137,22 @@ async function addTask(btn) {
   const taskName = nameInput.value.trim();
   if (!taskName) return;
   setLoading(btn, "در حال افزودن...");
-  await apiCall("addTask", { username, taskName, targetLabel: targetInput.value.trim() });
-  nameInput.value = "";
-  targetInput.value = "";
-  await loadTasks();
-  await loadTodayLogs();
-  renderTasks();
-  renderProgress();
-  await renderDailyChart();
-  await renderWeeklyChart();
-  await renderMonthlyChart();
-  await renderYearlyChart();
+  try {
+    await apiCall("addTask", { username, taskName, targetLabel: targetInput.value.trim() });
+    nameInput.value = "";
+    targetInput.value = "";
+    await loadTasks();
+    await loadTodayLogs();
+    renderTasks();
+    renderProgress();
+    await renderDailyChart();
+    await renderWeeklyChart();
+    await renderMonthlyChart();
+    await renderYearlyChart();
+    showToast("کار جدید اضافه شد");
+  } catch (e) {
+    showToast("خطا در ارتباط با سرور", "error");
+  }
   clearLoading(btn);
 }
 
