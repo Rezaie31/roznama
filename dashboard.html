@@ -25,14 +25,39 @@
         <svg id="today-ring" width="40" height="40" viewBox="0 0 40 40"></svg>
         <span class="ring-num" id="today-ring-num"></span>
       </div>
-      <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" aria-label="تغییر حالت روشن/تاریک">🌙</button>
+      <button class="theme-toggle wiggle-hover" id="theme-toggle" onclick="toggleTheme()" aria-label="تغییر حالت روشن/تاریک">🌙</button>
       <button class="btn btn-danger" onclick="logout()">خروج</button>
+    </div>
+  </div>
+
+  <!-- ===== استقبال + دیروز ===== -->
+  <div class="welcome-hero" id="welcome-hero">
+    <div class="welcome-hero-glow"></div>
+    <div class="welcome-hero-inner">
+      <h2 class="greeting" id="greeting-text"></h2>
+      <div class="hero-grid">
+        <div class="hero-panel">
+          <div class="panel-label">yesterday's tasks</div>
+          <div id="yesterday-tasks-list" class="yesterday-tasks"></div>
+          <div id="yesterday-tasks-empty" class="empty-hint" style="display:none">دیروز هنوز کاری تعریف نکرده بودی.</div>
+        </div>
+
+        <div class="hero-panel" id="reminder-panel" style="display:none">
+          <div class="panel-label">yesterday's note</div>
+          <p class="reminder-text" id="reminder-note-text"></p>
+          <div class="reminder-actions" id="reminder-actions">
+            <button class="btn btn-primary" onclick="respondToNote('accepted')"><span class="wiggle-hover">✅</span> قبول دارم، انجامش می‌دم</button>
+            <button class="btn btn-ghost" onclick="respondToNote('rejected')"><span class="wiggle-hover">✋</span> فعلاً نه</button>
+          </div>
+          <div class="reminder-result" id="reminder-result" style="display:none"></div>
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- ===== کارهای امروز ===== -->
   <div class="card">
-    <h2>✅ کارهای امروز</h2>
+    <h2><span class="wiggle-hover">✅</span> کارهای امروز</h2>
 
     <div class="progress-wrap" id="progress-wrap" style="display:none">
       <div class="progress-label">
@@ -54,11 +79,11 @@
   <!-- ===== نمودارها ===== -->
   <div class="charts-grid">
     <div class="card">
-      <h2>📊 پیشرفت امروز</h2>
+      <h2><span class="wiggle-hover">📊</span> پیشرفت امروز</h2>
       <div class="chart-box"><canvas id="daily-chart"></canvas></div>
     </div>
     <div class="card">
-      <h2>📈 روند هفته اخیر</h2>
+      <h2><span class="wiggle-hover">📈</span> روند هفته اخیر</h2>
       <div class="chart-box"><canvas id="weekly-chart"></canvas></div>
       <div class="week-ring-wrap">
         <svg id="week-ring" width="110" height="110" viewBox="0 0 110 110"></svg>
@@ -71,14 +96,14 @@
   <div class="charts-grid">
     <div class="card">
       <div class="chart-head">
-        <h2>🗓️ نمودار ماهانه</h2>
+        <h2><span class="wiggle-hover">🗓️</span> نمودار ماهانه</h2>
         <input type="month" id="month-picker" class="picker mono" />
       </div>
       <div class="chart-box"><canvas id="monthly-chart"></canvas></div>
     </div>
     <div class="card">
       <div class="chart-head">
-        <h2>📆 نمودار سالانه</h2>
+        <h2><span class="wiggle-hover">📆</span> نمودار سالانه</h2>
         <select id="year-picker" class="picker mono"></select>
       </div>
       <div class="chart-box"><canvas id="yearly-chart"></canvas></div>
@@ -87,11 +112,7 @@
 
   <!-- ===== دفترچه یادداشت ===== -->
   <div class="card">
-    <h2>📓 دفترچه یادداشت</h2>
-    <div class="note-box" id="yesterday-note-box" style="display:none">
-      <span class="label">yesterday</span>
-      <div id="yesterday-note-text"></div>
-    </div>
+    <h2><span class="wiggle-hover">📓</span> دفترچه یادداشت</h2>
     <textarea class="journal" id="today-note" placeholder="امروز چی گذشت؟ چند خط بنویس..."></textarea>
     <div class="save-row">
       <button class="btn btn-primary" onclick="saveJournal(this)">ذخیره یادداشت امروز</button>
