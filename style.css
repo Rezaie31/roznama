@@ -165,9 +165,9 @@ footer.site-footer{ text-align:center; padding: 40px 20px; color: var(--muted); 
 .progress-track{ height:10px; border-radius:20px; background: var(--line); overflow:hidden; }
 .progress-fill{ height:100%; border-radius:20px; background: linear-gradient(90deg, var(--sunset), var(--forest)); transition: width .5s ease; }
 
-/* ===== CHECKMARK POP ===== */
-.task-check.pop{ animation: checkPop .35s ease; }
-@keyframes checkPop{ 0%{ transform: scale(1);} 40%{ transform: scale(1.25);} 100%{ transform: scale(1);} }
+/* ===== CHIP POP ===== */
+.chip.pop{ animation: checkPop .35s ease; }
+@keyframes checkPop{ 0%{ transform: scale(1);} 40%{ transform: scale(1.2);} 100%{ transform: scale(1);} }
 
 .empty-hint .icon{ font-size: 28px; display:block; margin-bottom:10px; }
 
@@ -201,6 +201,10 @@ footer.site-footer{ text-align:center; padding: 40px 20px; color: var(--muted); 
 /* ===== SUPPORT CHAT ===== */
 .support-modal{ max-width: 400px; }
 .support-hint{ font-size: 13px; color: var(--muted); line-height: 1.8; margin: 0 0 18px; }
+.support-notice{
+  background: rgba(224,138,60,0.12); border: 1px solid rgba(224,138,60,0.3); color: var(--ink);
+  font-size: 12px; line-height: 1.8; padding: 10px 14px; border-radius: 10px; margin-bottom: 14px;
+}
 .support-textarea{
   width:100%; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--line);
   font-family: inherit; font-size: 14px; background: var(--paper); resize: vertical;
@@ -232,22 +236,55 @@ footer.site-footer{ text-align:center; padding: 40px 20px; color: var(--muted); 
 .card{ background: var(--paper-2); border:1px solid var(--line); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); margin-bottom: 24px; }
 .card h2{ font-size: 17px; margin: 0 0 18px; display:flex; align-items:center; gap: 8px; }
 
-.task-row{ display:flex; align-items:center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
-.task-row:last-child{ border-bottom:none; }
-.task-check{
-  width: 26px; height: 26px; border-radius: 8px; border: 2px solid var(--line);
-  display:flex; align-items:center; justify-content:center; flex-shrink:0; background: var(--paper);
-  transition: all .2s;
+/* ===== FOLDERS ===== */
+.folder-group{ border: 1px solid var(--line); border-radius: 12px; margin-bottom: 14px; overflow: hidden; }
+.folder-header{
+  display:flex; align-items:center; gap: 10px; padding: 14px 16px; cursor:pointer;
+  background: var(--paper); transition: background .2s;
 }
-.task-check.done{ background: var(--forest); border-color: var(--forest); color:#fff; }
+.folder-header:hover{ background: rgba(224,138,60,0.08); }
+.folder-header .chevron{ transition: transform .25s ease; color: var(--muted); font-size: 12px; }
+.folder-header.open .chevron{ transform: rotate(90deg); }
+.folder-header .folder-name{ font-weight: 600; font-size: 14px; flex:1; }
+.folder-header .folder-avg{ font-family:'IBM Plex Mono', monospace; direction:ltr; unicode-bidi:isolate; font-size: 12px; color: var(--muted); }
+.folder-del{ background:none; border:none; color: var(--muted); font-size: 16px; padding: 2px 6px; }
+.folder-del:hover{ color: var(--danger); }
+.folder-body{ display:grid; grid-template-rows: 0fr; transition: grid-template-rows .3s ease; }
+.folder-body.open{ grid-template-rows: 1fr; }
+.folder-body-inner{ min-height:0; overflow:hidden; padding: 0 16px; }
+.folder-body.open .folder-body-inner{ padding: 6px 16px 12px; }
+.ungrouped-tasks{ margin-bottom: 14px; }
+
+/* ===== TASK ROW (percentage-based) ===== */
+.task-row{ padding: 14px 0; border-bottom: 1px solid var(--line); }
+.task-row:last-child{ border-bottom:none; }
+.task-row-top{ display:flex; align-items:center; gap: 10px; margin-bottom: 10px; }
 .task-name{ flex:1; font-size: 15px; }
 .task-target{ font-size: 12px; color: var(--muted); }
 .task-del{ background:none; border:none; color: var(--muted); font-size: 18px; }
 .task-del:hover{ color: var(--danger); }
 
-.add-task-row{ display:flex; gap: 10px; margin-top: 16px; }
+.progress-chips{ display:flex; gap: 6px; flex-wrap: wrap; }
+.chip{
+  border: 1px solid var(--line); background: var(--paper); color: var(--muted);
+  border-radius: 20px; padding: 6px 12px; font-size: 12px; font-family:'IBM Plex Mono', monospace;
+  direction: ltr; unicode-bidi: isolate; transition: transform .15s ease, box-shadow .15s ease;
+}
+.chip:hover{ transform: translateY(-1px); }
+.chip.active{ color: #fff; border-color: transparent; box-shadow: var(--shadow-sm); font-weight: 600; }
+
+/* ===== ADD FOLDER / ADD TASK ===== */
+.add-folder-row{ display:flex; gap: 10px; margin-top: 4px; margin-bottom: 16px; }
+.add-folder-row input{ flex:1; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line); font-family:inherit; background: var(--paper); }
+
+.add-task-row{ display:flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
 .add-task-row input{ flex:1; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line); font-family:inherit; background: var(--paper); }
 .add-task-row input.target{ flex: 0 0 120px; }
+.folder-select{ flex: 0 0 140px; }
+@media (max-width: 560px){
+  .add-task-row input, .add-task-row select{ flex: 1 1 100%; }
+}
+
 
 .charts-grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 24px; }
 @media (max-width: 720px){ .charts-grid{ grid-template-columns: 1fr; } }
@@ -294,9 +331,10 @@ textarea.journal{
 .panel-label{ font-family:'IBM Plex Mono', monospace; direction:ltr; unicode-bidi:isolate; font-size: 11px; text-transform:uppercase; letter-spacing:.08em; color: var(--muted); margin-bottom: 12px; }
 .yesterday-tasks{ display:flex; flex-direction:column; gap:10px; }
 .y-task-row{ display:flex; align-items:center; gap:10px; font-size:14px; }
-.y-task-row .mark{ width:20px; height:20px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:12px; flex-shrink:0; }
-.y-task-row .mark.done{ background: var(--forest); color:#fff; }
-.y-task-row .mark.missed{ background: rgba(179,67,47,0.15); color: var(--danger); }
+.y-task-row .mark{
+  min-width: 42px; height:22px; padding: 0 8px; border-radius: 20px; display:flex; align-items:center; justify-content:center;
+  font-size:11px; font-family:'IBM Plex Mono', monospace; direction:ltr; unicode-bidi:isolate; flex-shrink:0; color:#fff; font-weight:600;
+}
 .reminder-text{ font-size: 14px; line-height:1.9; margin: 0 0 16px; color: var(--ink); }
 .reminder-actions{ display:flex; gap: 10px; flex-wrap:wrap; }
 .reminder-actions .btn{ font-size: 13px; padding: 10px 18px; }
