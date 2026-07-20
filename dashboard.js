@@ -4,10 +4,22 @@ if (!username) {
 }
 document.getElementById("welcome-msg").textContent = "@" + username;
 
+const PROGRESS_VALUES = [0, 10, 25, 50, 75, 100];
+const PROGRESS_COLORS = { 0: "#b3432f", 10: "#c65a3a", 25: "#d97a3f", 50: "#e0a83c", 75: "#8fae4a", 100: "#2f7a5c" };
+function colorForPct(pct) {
+  let closest = 0;
+  PROGRESS_VALUES.forEach((v) => {
+    if (Math.abs(v - pct) <= Math.abs(closest - pct)) closest = v;
+  });
+  return PROGRESS_COLORS[closest];
+}
+
 let tasks = [];
-let todayLogsMap = {}; // taskId -> done
-let logsCache = []; // همه‌ی لاگ‌های امسال تا امروز (یه‌بار می‌گیریم، بعد فیلتر می‌کنیم)
+let folders = [];
+let todayProgressMap = {}; // taskId -> 0..100
+let logsCache = []; // {date, taskId, progress} همه‌ی امسال تا امروز
 let cachedYear = new Date().getFullYear();
+let openFolders = new Set(); // folderId هایی که بازن
 let dailyChart, weeklyChart, monthlyChart, yearlyChart;
 
 async function init() {
@@ -15,17 +27,20 @@ async function init() {
   initPickers();
   renderGreeting();
 
-  // یه درخواست واحد به‌جای ۸ تا درخواست جدا، برای سرعت بیشتر
   const data = await apiCall("getDashboardData", { username });
   tasks = data.ok ? data.tasks : [];
+  folders = data.ok ? data.folders || [] : [];
   logsCache = data.ok ? data.logs : [];
+  folders.forEach((f) => openFolders.add(f.folderId)); // پیش‌فرض همه باز باشن
+  openFolders.add("__none__");
 
   const todayKey = dateKey(0);
-  todayLogsMap = {};
+  todayProgressMap = {};
   logsCache
     .filter((l) => l.date === todayKey)
-    .forEach((l) => (todayLogsMap[l.taskId] = l.done === true || l.done === "TRUE"));
+    .forEach((l) => (todayProgressMap[l.taskId] = l.progress));
 
+  populateFolderSelect();
   renderTasks();
   renderProgress();
   renderDailyChart();
@@ -50,127 +65,144 @@ function renderGreeting() {
   document.getElementById("greeting-text").textContent = `${salute}، ${username} 👋`;
 }
 
-// ===================== YESTERDAY RECAP =====================
-function renderYesterdayRecap() {
-  const list = document.getElementById("yesterday-tasks-list");
-  const empty = document.getElementById("yesterday-tasks-empty");
-  list.innerHTML = "";
-
-  if (tasks.length === 0) {
-    empty.style.display = "block";
-    return;
-  }
-  empty.style.display = "none";
-
-  const yDate = dateKey(-1);
-  const doneMap = {};
-  logsCache
-    .filter((l) => l.date === yDate)
-    .forEach((l) => (doneMap[l.taskId] = l.done === true || l.done === "TRUE"));
-
-  tasks.forEach((task) => {
-    const done = !!doneMap[task.taskId];
-    const row = document.createElement("div");
-    row.className = "y-task-row";
-    row.innerHTML = `<span class="mark ${done ? "done" : "missed"}">${done ? "✓" : "×"}</span><span>${escapeHtml(task.taskName)}</span>`;
-    list.appendChild(row);
+// ===================== FOLDERS =====================
+function populateFolderSelect() {
+  const select = document.getElementById("new-task-folder");
+  select.innerHTML = `<option value="">بدون پوشه</option>`;
+  folders.forEach((f) => {
+    const opt = document.createElement("option");
+    opt.value = f.folderId;
+    opt.textContent = f.folderName;
+    select.appendChild(opt);
   });
 }
 
-let wasFullyDone = false;
-let firstProgressRender = true;
-
-function renderProgress() {
-  const wrap = document.getElementById("progress-wrap");
-  const ringNum = document.getElementById("today-ring-num");
-  const ring = document.getElementById("today-ring");
-
-  if (tasks.length === 0) {
-    wrap.style.display = "none";
-    ring.innerHTML = "";
-    ringNum.textContent = "";
-    return;
+async function addFolder(btn) {
+  const input = document.getElementById("new-folder-name");
+  const folderName = input.value.trim();
+  if (!folderName) return;
+  setLoading(btn, "...");
+  try {
+    const res = await apiCall("addFolder", { username, folderName });
+    folders.push({ folderId: res.folderId, folderName });
+    openFolders.add(res.folderId);
+    input.value = "";
+    populateFolderSelect();
+    renderTasks();
+    showToast("پوشه‌ی جدید ساخته شد");
+  } catch (e) {
+    showToast("خطا در ساخت پوشه", "error");
   }
-  const doneCount = tasks.filter((t) => todayLogsMap[t.taskId]).length;
-  const pct = Math.round((doneCount / tasks.length) * 100);
-  wrap.style.display = "block";
-  document.getElementById("progress-text").textContent = `${doneCount} از ${tasks.length} کار انجام شده`;
-  document.getElementById("progress-pct").textContent = pct + "%";
-  document.getElementById("progress-fill").style.width = pct + "%";
-
-  drawTodayRing(pct);
-  ringNum.textContent = pct + "%";
-
-  const fullyDone = doneCount === tasks.length;
-  if (fullyDone && !wasFullyDone && !firstProgressRender) {
-    launchConfetti();
-    showToast("همه‌ی کارهای امروز انجام شد! 🎉", "success");
-  }
-  wasFullyDone = fullyDone;
-  firstProgressRender = false;
+  clearLoading(btn);
 }
 
-function drawTodayRing(pct) {
-  const svg = document.getElementById("today-ring");
-  const cx = 20, cy = 20, r = 16, strokeW = 4;
-  const circumference = 2 * Math.PI * r;
-  const offset = circumference * (1 - pct / 100);
-  const color = pct >= 100 ? "#2f7a5c" : "#e08a3c";
-  svg.innerHTML = `
-    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--line)" stroke-width="${strokeW}" />
-    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="${strokeW}"
-      stroke-linecap="round" stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"
-      transform="rotate(-90 ${cx} ${cy})" style="transition: stroke-dashoffset .5s ease" />
+async function deleteFolder(folderId, evt) {
+  if (evt) evt.stopPropagation();
+  if (!confirm("این پوشه حذف بشه؟ (کارهای داخلش پاک نمی‌شن، فقط بدون‌پوشه می‌شن)")) return;
+  await apiCall("deleteFolder", { username, folderId });
+  folders = folders.filter((f) => f.folderId !== folderId);
+  tasks.forEach((t) => {
+    if (t.folderId === folderId) t.folderId = "";
+  });
+  populateFolderSelect();
+  renderTasks();
+  renderProgress();
+}
+
+function toggleFolder(folderId, evt) {
+  if (evt && evt.target.closest(".folder-del")) return;
+  if (openFolders.has(folderId)) openFolders.delete(folderId);
+  else openFolders.add(folderId);
+  renderTasks();
+}
+
+// ===================== TASKS (RENDER) =====================
+function folderAvgPct(folderTasks) {
+  if (folderTasks.length === 0) return 0;
+  const sum = folderTasks.reduce((s, t) => s + (todayProgressMap[t.taskId] || 0), 0);
+  return Math.round(sum / folderTasks.length);
+}
+
+function buildTaskRowHtml(task) {
+  const pct = todayProgressMap[task.taskId] || 0;
+  const chips = PROGRESS_VALUES.map((v) => {
+    const active = v === pct;
+    const style = active ? `style="background:${colorForPct(v)}"` : "";
+    return `<button class="chip ${active ? "active" : ""}" ${style} data-task="${task.taskId}" data-val="${v}">${v}٪</button>`;
+  }).join("");
+
+  return `
+    <div class="task-row">
+      <div class="task-row-top">
+        <div class="task-name">${escapeHtml(task.taskName)}</div>
+        ${task.targetLabel ? `<div class="task-target">${escapeHtml(task.targetLabel)}</div>` : ""}
+        <button class="task-del" data-id="${task.taskId}">×</button>
+      </div>
+      <div class="progress-chips">${chips}</div>
+    </div>
   `;
 }
 
-// ===================== TASKS =====================
 function renderTasks() {
-  const list = document.getElementById("task-list");
+  const container = document.getElementById("folders-container");
   const empty = document.getElementById("task-empty");
-  list.innerHTML = "";
+  container.innerHTML = "";
   empty.style.display = tasks.length === 0 ? "block" : "none";
 
-  tasks.forEach((task) => {
-    const done = !!todayLogsMap[task.taskId];
-    const row = document.createElement("div");
-    row.className = "task-row";
-    row.innerHTML = `
-      <button class="task-check ${done ? "done" : ""}" data-id="${task.taskId}">${done ? "✓" : ""}</button>
-      <div style="flex:1">
-        <div class="task-name">${escapeHtml(task.taskName)}</div>
-        ${task.targetLabel ? `<div class="task-target">${escapeHtml(task.targetLabel)}</div>` : ""}
+  const ungrouped = tasks.filter((t) => !t.folderId);
+  if (ungrouped.length > 0) {
+    const wrap = document.createElement("div");
+    wrap.className = "ungrouped-tasks";
+    wrap.innerHTML = ungrouped.map(buildTaskRowHtml).join("");
+    container.appendChild(wrap);
+  }
+
+  folders.forEach((folder) => {
+    const folderTasks = tasks.filter((t) => t.folderId === folder.folderId);
+    const isOpen = openFolders.has(folder.folderId);
+    const group = document.createElement("div");
+    group.className = "folder-group";
+    group.innerHTML = `
+      <div class="folder-header ${isOpen ? "open" : ""}" data-folder="${folder.folderId}">
+        <span class="chevron">▶</span>
+        <span class="folder-name">📁 ${escapeHtml(folder.folderName)}</span>
+        <span class="folder-avg">${folderTasks.length ? folderAvgPct(folderTasks) + "%" : "خالی"}</span>
+        <button class="folder-del" data-folder="${folder.folderId}">×</button>
       </div>
-      <button class="task-del" data-id="${task.taskId}">×</button>
+      <div class="folder-body ${isOpen ? "open" : ""}">
+        <div class="folder-body-inner">${folderTasks.map(buildTaskRowHtml).join("") || `<div class="empty-hint" style="padding:12px 0">کاری تو این پوشه نیست</div>`}</div>
+      </div>
     `;
-    list.appendChild(row);
+    container.appendChild(group);
   });
 
-  list.querySelectorAll(".task-check").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      btn.classList.add("pop");
-      toggleTask(btn.dataset.id);
-    });
+  container.querySelectorAll(".folder-header").forEach((el) => {
+    el.addEventListener("click", (evt) => toggleFolder(el.dataset.folder, evt));
   });
-  list.querySelectorAll(".task-del").forEach((btn) => {
+  container.querySelectorAll(".folder-del").forEach((el) => {
+    el.addEventListener("click", (evt) => deleteFolder(el.dataset.folder, evt));
+  });
+  container.querySelectorAll(".task-del").forEach((btn) => {
     btn.addEventListener("click", () => removeTask(btn.dataset.id));
   });
+  container.querySelectorAll(".chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      chip.classList.add("pop");
+      setProgress(chip.dataset.task, Number(chip.dataset.val));
+    });
+  });
 }
 
-function upsertLogCache(date, taskId, done) {
+function upsertLogCache(date, taskId, progress) {
   const existing = logsCache.find((l) => l.date === date && l.taskId === taskId);
-  if (existing) {
-    existing.done = done;
-  } else {
-    logsCache.push({ date, taskId, done });
-  }
+  if (existing) existing.progress = progress;
+  else logsCache.push({ date, taskId, progress });
 }
 
-async function toggleTask(taskId) {
-  const newDone = !todayLogsMap[taskId];
-  todayLogsMap[taskId] = newDone;
+async function setProgress(taskId, value) {
+  todayProgressMap[taskId] = value;
   const todayKey = dateKey(0);
-  upsertLogCache(todayKey, taskId, newDone);
+  upsertLogCache(todayKey, taskId, value);
 
   renderTasks();
   renderProgress();
@@ -179,18 +211,20 @@ async function toggleTask(taskId) {
   renderMonthlyChart();
   renderYearlyChart();
 
-  await apiCall("logTask", { username, date: todayKey, taskId, done: newDone });
+  await apiCall("logTask", { username, date: todayKey, taskId, progress: value });
 }
 
 async function addTask(btn) {
   const nameInput = document.getElementById("new-task-name");
   const targetInput = document.getElementById("new-task-target");
+  const folderSelect = document.getElementById("new-task-folder");
   const taskName = nameInput.value.trim();
   if (!taskName) return;
   setLoading(btn, "در حال افزودن...");
   try {
-    const res = await apiCall("addTask", { username, taskName, targetLabel: targetInput.value.trim() });
-    tasks.push({ taskId: res.taskId, taskName, targetLabel: targetInput.value.trim() });
+    const folderId = folderSelect.value;
+    const res = await apiCall("addTask", { username, taskName, targetLabel: targetInput.value.trim(), folderId });
+    tasks.push({ taskId: res.taskId, taskName, targetLabel: targetInput.value.trim(), folderId });
     nameInput.value = "";
     targetInput.value = "";
     renderTasks();
@@ -220,6 +254,84 @@ async function removeTask(taskId) {
   renderYesterdayRecap();
 }
 
+// ===================== YESTERDAY RECAP =====================
+function renderYesterdayRecap() {
+  const list = document.getElementById("yesterday-tasks-list");
+  const empty = document.getElementById("yesterday-tasks-empty");
+  list.innerHTML = "";
+
+  if (tasks.length === 0) {
+    empty.style.display = "block";
+    return;
+  }
+  empty.style.display = "none";
+
+  const yDate = dateKey(-1);
+  const progMap = {};
+  logsCache.filter((l) => l.date === yDate).forEach((l) => (progMap[l.taskId] = l.progress));
+
+  tasks.forEach((task) => {
+    const pct = progMap[task.taskId] || 0;
+    const row = document.createElement("div");
+    row.className = "y-task-row";
+    row.innerHTML = `<span class="mark" style="background:${colorForPct(pct)}">${pct}٪</span><span>${escapeHtml(task.taskName)}</span>`;
+    list.appendChild(row);
+  });
+}
+
+// ===================== PROGRESS BAR + RING =====================
+let wasFullyDone = false;
+let firstProgressRender = true;
+
+function todayAvgPct() {
+  if (tasks.length === 0) return 0;
+  const sum = tasks.reduce((s, t) => s + (todayProgressMap[t.taskId] || 0), 0);
+  return Math.round(sum / tasks.length);
+}
+
+function renderProgress() {
+  const wrap = document.getElementById("progress-wrap");
+  const ringNum = document.getElementById("today-ring-num");
+  const ring = document.getElementById("today-ring");
+
+  if (tasks.length === 0) {
+    wrap.style.display = "none";
+    ring.innerHTML = "";
+    ringNum.textContent = "";
+    return;
+  }
+  const pct = todayAvgPct();
+  wrap.style.display = "block";
+  document.getElementById("progress-text").textContent = "میانگین پیشرفت امروز";
+  document.getElementById("progress-pct").textContent = pct + "%";
+  document.getElementById("progress-fill").style.width = pct + "%";
+  document.getElementById("progress-fill").style.background = colorForPct(pct);
+
+  drawTodayRing(pct);
+  ringNum.textContent = pct + "%";
+
+  const fullyDone = tasks.length > 0 && tasks.every((t) => (todayProgressMap[t.taskId] || 0) === 100);
+  if (fullyDone && !wasFullyDone && !firstProgressRender) {
+    launchConfetti();
+    showToast("همه‌ی کارهای امروز صد در صد انجام شد! 🎉", "success");
+  }
+  wasFullyDone = fullyDone;
+  firstProgressRender = false;
+}
+
+function drawTodayRing(pct) {
+  const svg = document.getElementById("today-ring");
+  const cx = 20, cy = 20, r = 16, strokeW = 4;
+  const circumference = 2 * Math.PI * r;
+  const offset = circumference * (1 - pct / 100);
+  svg.innerHTML = `
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--line)" stroke-width="${strokeW}" />
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${colorForPct(pct)}" stroke-width="${strokeW}"
+      stroke-linecap="round" stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"
+      transform="rotate(-90 ${cx} ${cy})" style="transition: stroke-dashoffset .5s ease" />
+  `;
+}
+
 // ===================== MONTHLY CHART =====================
 function daysInMonth_(year, monthIndex) {
   return new Date(year, monthIndex + 1, 0).getDate();
@@ -233,7 +345,7 @@ function initPickers() {
   monthPicker.addEventListener("change", () => renderMonthlyChart());
 
   const yearPicker = document.getElementById("year-picker");
-  const startYear = now.getFullYear() - 5; // آخرین ۶ سال قابل انتخابن
+  const startYear = now.getFullYear() - 5;
   yearPicker.innerHTML = "";
   for (let y = now.getFullYear(); y >= startYear; y--) {
     const opt = document.createElement("option");
@@ -244,15 +356,22 @@ function initPickers() {
   yearPicker.addEventListener("change", () => renderYearlyChart());
 }
 
+function avgPctForDay(logs, key) {
+  if (tasks.length === 0) return 0;
+  const progMap = {};
+  logs.filter((l) => l.date === key).forEach((l) => (progMap[l.taskId] = l.progress));
+  const sum = tasks.reduce((s, t) => s + (progMap[t.taskId] || 0), 0);
+  return Math.round(sum / tasks.length);
+}
+
 async function getMonthData() {
   const [yearStr, monthStr] = document.getElementById("month-picker").value.split("-");
   const year = Number(yearStr);
-  const month = Number(monthStr) - 1; // 0-based
+  const month = Number(monthStr) - 1;
   const now = new Date();
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth();
   const lastDay = isCurrentMonth ? now.getDate() : daysInMonth_(year, month);
 
-  // اگه سالش همون سالیه که تو حافظه داریم، از حافظه فیلتر کن (بدون درخواست جدید)
   let logs;
   if (year === cachedYear) {
     logs = logsCache;
@@ -266,10 +385,7 @@ async function getMonthData() {
   const days = [];
   for (let d = 1; d <= lastDay; d++) {
     const key = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-    const dayLogs = logs.filter((l) => l.date === key && (l.done === true || l.done === "TRUE"));
-    const total = tasks.length;
-    const pct = total > 0 ? Math.round((dayLogs.length / total) * 100) : 0;
-    days.push({ label: String(d), pct });
+    days.push({ label: String(d), pct: avgPctForDay(logs, key) });
   }
   return days;
 }
@@ -282,13 +398,7 @@ async function renderMonthlyChart() {
     type: "bar",
     data: {
       labels: days.map((d) => d.label),
-      datasets: [
-        {
-          data: days.map((d) => d.pct),
-          backgroundColor: days.map((d) => (d.pct >= 100 ? "#2f7a5c" : d.pct > 0 ? "#e08a3c" : "rgba(107,114,128,0.25)")),
-          borderRadius: 4,
-        },
-      ],
+      datasets: [{ data: days.map((d) => d.pct), backgroundColor: days.map((d) => colorForPct(d.pct)), borderRadius: 4 }],
     },
     options: {
       responsive: true,
@@ -324,11 +434,13 @@ async function getYearData() {
 
   const months = [];
   for (let m = 0; m <= lastMonth; m++) {
-    const relevantDays = isCurrentYear && m === now.getMonth() ? now.getDate() : daysInMonth_(year, m);
-    const monthPrefix = `${year}-${String(m + 1).padStart(2, "0")}-`;
-    const monthLogs = logs.filter((l) => l.date.startsWith(monthPrefix) && (l.done === true || l.done === "TRUE"));
-    const total = tasks.length * relevantDays;
-    const pct = total > 0 ? Math.round((monthLogs.length / total) * 100) : 0;
+    const daysCount = isCurrentYear && m === now.getMonth() ? now.getDate() : daysInMonth_(year, m);
+    let total = 0;
+    for (let d = 1; d <= daysCount; d++) {
+      const key = `${year}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      total += avgPctForDay(logs, key);
+    }
+    const pct = daysCount > 0 ? Math.round(total / daysCount) : 0;
     months.push({ label: monthNamesFa[m], pct });
   }
   return months;
@@ -342,13 +454,7 @@ async function renderYearlyChart() {
     type: "bar",
     data: {
       labels: months.map((m) => m.label),
-      datasets: [
-        {
-          data: months.map((m) => m.pct),
-          backgroundColor: months.map((m) => (m.pct >= 70 ? "#2f7a5c" : m.pct > 0 ? "#e08a3c" : "rgba(107,114,128,0.25)")),
-          borderRadius: 4,
-        },
-      ],
+      datasets: [{ data: months.map((m) => m.pct), backgroundColor: months.map((m) => colorForPct(m.pct)), borderRadius: 4 }],
     },
     options: {
       responsive: true,
@@ -364,29 +470,21 @@ async function renderYearlyChart() {
 function renderDailyChart() {
   const ctx = document.getElementById("daily-chart");
   const labels = tasks.map((t) => t.taskName);
-  const data = tasks.map((t) => (todayLogsMap[t.taskId] ? 1 : 0));
+  const data = tasks.map((t) => todayProgressMap[t.taskId] || 0);
 
   if (dailyChart) dailyChart.destroy();
   dailyChart = new Chart(ctx, {
     type: "bar",
     data: {
       labels,
-      datasets: [
-        {
-          data,
-          backgroundColor: data.map((d) => (d ? "#2f7a5c" : "rgba(107,114,128,0.25)")),
-          borderRadius: 6,
-        },
-      ],
+      datasets: [{ data, backgroundColor: data.map(colorForPct), borderRadius: 6 }],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       animation: { duration: 500 },
       plugins: { legend: { display: false } },
-      scales: {
-        y: { min: 0, max: 1, ticks: { stepSize: 1, callback: (v) => (v === 1 ? "انجام شد" : "نشد") } },
-      },
+      scales: { y: { min: 0, max: 100, ticks: { callback: (v) => v + "%" } } },
     },
   });
 }
@@ -396,10 +494,7 @@ function getWeekData() {
   const days = [];
   for (let i = 6; i >= 0; i--) {
     const key = dateKey(-i);
-    const dayLogs = logsCache.filter((l) => l.date === key && (l.done === true || l.done === "TRUE"));
-    const total = tasks.length;
-    const pct = total > 0 ? Math.round((dayLogs.length / total) * 100) : 0;
-    days.push({ key, label: weekdayLabelFa(key), pct });
+    days.push({ key, label: weekdayLabelFa(key), pct: avgPctForDay(logsCache, key) });
   }
   return days;
 }
@@ -444,17 +539,15 @@ function drawWeekRing(days) {
 
   const cx = 55, cy = 55, r = 42, strokeW = 12;
   const n = days.length;
-  const gap = 0.06; // فاصله بین قوس‌ها (رادیان)
+  const gap = 0.06;
   const segAngle = (2 * Math.PI) / n - gap;
 
   days.forEach((d, i) => {
     const startAngle = -Math.PI / 2 + i * ((2 * Math.PI) / n);
     const endAngle = startAngle + segAngle;
-    const color = d.pct >= 100 ? "#2f7a5c" : d.pct > 0 ? "#e08a3c" : "rgba(107,114,128,0.25)";
-
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     path.setAttribute("d", arcPath(cx, cy, r, startAngle, endAngle));
-    path.setAttribute("stroke", color);
+    path.setAttribute("stroke", colorForPct(d.pct));
     path.setAttribute("stroke-width", strokeW);
     path.setAttribute("fill", "none");
     path.setAttribute("stroke-linecap", "round");
@@ -473,9 +566,9 @@ function drawWeekRing(days) {
   svg.appendChild(centerText);
 
   legend.innerHTML = `
-    <div><span class="dot" style="background:#2f7a5c"></span>روز کامل</div>
-    <div><span class="dot" style="background:#e08a3c"></span>ناقص</div>
-    <div><span class="dot" style="background:rgba(107,114,128,0.25)"></span>انجام‌نشده</div>
+    <div><span class="dot" style="background:#2f7a5c"></span>عالی (۷۵-۱۰۰٪)</div>
+    <div><span class="dot" style="background:#e0a83c"></span>متوسط (۲۵-۵۰٪)</div>
+    <div><span class="dot" style="background:#b3432f"></span>کم (۰-۱۰٪)</div>
   `;
 }
 
