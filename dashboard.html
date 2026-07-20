@@ -67,14 +67,22 @@
       <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
     </div>
 
-    <div id="task-list"></div>
+    <div id="folders-container"></div>
     <div id="task-empty" class="empty-hint" style="display:none"><span class="icon">🗒️</span>هنوز کاری اضافه نکردی. یکی پایین اضافه کن.</div>
+
+    <div class="add-folder-row">
+      <input type="text" id="new-folder-name" placeholder="اسم پوشه‌ی جدید (مثلاً: آشپزی)" />
+      <button class="btn btn-ghost" id="add-folder-btn" onclick="addFolder(this)">📁 پوشه جدید</button>
+    </div>
+
     <div class="add-task-row">
+      <select id="new-task-folder" class="picker folder-select"></select>
       <input type="text" id="new-task-name" placeholder="مثلاً: یک ساعت ورزش" />
       <input type="text" id="new-task-target" class="target" placeholder="هدف (اختیاری)" />
       <button class="btn btn-primary" id="add-task-btn" onclick="addTask(this)">افزودن</button>
     </div>
   </div>
+
 
   <!-- ===== نمودارها ===== -->
   <div class="charts-grid">
