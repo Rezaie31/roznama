@@ -34,7 +34,7 @@ async function startSupportChat(btn) {
     localStorage.setItem("dt_support_phone", phone);
     clearLoading(btn);
     showSupportChat(phone);
-    showToast("پیامت ارسال شد");
+    showToast("درخواستت ثبت شد، تا ۲۴ ساعت آینده جواب می‌گیری");
   } catch (e) {
     errEl.textContent = "خطا در ارسال. دوباره امتحان کن.";
     clearLoading(btn);
