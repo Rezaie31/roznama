@@ -105,6 +105,9 @@
         <label>رمز عبور</label>
         <input type="password" id="login-password" autocomplete="current-password" />
       </div>
+      <div class="forgot-link">
+        <a href="#" onclick="closeModal(); openSupportModal(); return false;">رمز رو فراموش کردم؟</a>
+      </div>
       <div class="error-msg" id="login-error"></div>
       <button class="btn btn-primary btn-block" onclick="handleLogin(this)">ورود</button>
     </div>
@@ -125,8 +128,40 @@
   </div>
 </div>
 
+<!-- ===== پشتیبانی / بازیابی رمز ===== -->
+<div class="overlay" id="support-overlay">
+  <div class="modal support-modal">
+    <button class="modal-close" onclick="closeSupportModal()">×</button>
+    <h2>🔑 بازیابی رمز عبور</h2>
+
+    <div id="support-intro">
+      <p class="support-hint">شماره تماست رو بذار و بگو مشکلت چیه (مثلاً: رمز حساب با نام کاربری «...» یادم رفته). در اسرع وقت جواب می‌دیم.</p>
+      <div class="field">
+        <label>شماره تماس</label>
+        <input type="tel" id="support-phone" placeholder="09xxxxxxxxx" />
+      </div>
+      <div class="field">
+        <label>پیامت</label>
+        <textarea id="support-first-message" class="support-textarea" rows="3" placeholder="مشکلت رو بنویس..."></textarea>
+      </div>
+      <div class="error-msg" id="support-error"></div>
+      <button class="btn btn-primary btn-block" onclick="startSupportChat(this)">ارسال درخواست</button>
+    </div>
+
+    <div id="support-chat" style="display:none">
+      <div class="chat-thread" id="chat-thread"></div>
+      <div class="chat-input-row">
+        <input type="text" id="chat-input" placeholder="پیام جدید..." />
+        <button class="btn btn-primary" onclick="sendChatMessage(this)">ارسال</button>
+      </div>
+      <button class="chat-reset" onclick="resetSupportPhone()">این شماره من نیست</button>
+    </div>
+  </div>
+</div>
+
 <script src="config.js"></script>
 <script src="api.js"></script>
 <script src="landing.js"></script>
+<script src="support.js"></script>
 </body>
 </html>
