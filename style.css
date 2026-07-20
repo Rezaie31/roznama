@@ -263,6 +263,10 @@ footer.site-footer{ text-align:center; padding: 40px 20px; color: var(--muted); 
 .task-target{ font-size: 12px; color: var(--muted); }
 .task-del{ background:none; border:none; color: var(--muted); font-size: 18px; }
 .task-del:hover{ color: var(--danger); }
+.task-folder-move{
+  border: 1px solid var(--line); background: var(--paper); color: var(--muted);
+  border-radius: 8px; padding: 4px 8px; font-size: 11px; max-width: 110px; flex-shrink: 0;
+}
 
 .progress-chips{ display:flex; gap: 6px; flex-wrap: wrap; }
 .chip{
