@@ -131,11 +131,16 @@ function buildTaskRowHtml(task) {
     return `<button class="chip ${active ? "active" : ""}" ${style} data-task="${task.taskId}" data-val="${v}">${v}٪</button>`;
   }).join("");
 
+  const folderOptions =
+    `<option value="" ${!task.folderId ? "selected" : ""}>بدون پوشه</option>` +
+    folders.map((f) => `<option value="${f.folderId}" ${task.folderId === f.folderId ? "selected" : ""}>${escapeHtml(f.folderName)}</option>`).join("");
+
   return `
     <div class="task-row">
       <div class="task-row-top">
         <div class="task-name">${escapeHtml(task.taskName)}</div>
         ${task.targetLabel ? `<div class="task-target">${escapeHtml(task.targetLabel)}</div>` : ""}
+        <select class="task-folder-move mono" data-task="${task.taskId}" title="جابه‌جایی به پوشه‌ی دیگه">${folderOptions}</select>
         <button class="task-del" data-id="${task.taskId}">×</button>
       </div>
       <div class="progress-chips">${chips}</div>
@@ -184,6 +189,9 @@ function renderTasks() {
   });
   container.querySelectorAll(".task-del").forEach((btn) => {
     btn.addEventListener("click", () => removeTask(btn.dataset.id));
+  });
+  container.querySelectorAll(".task-folder-move").forEach((select) => {
+    select.addEventListener("change", () => moveTaskFolder(select.dataset.task, select.value));
   });
   container.querySelectorAll(".chip").forEach((chip) => {
     chip.addEventListener("click", () => {
@@ -239,6 +247,20 @@ async function addTask(btn) {
     showToast("خطا در ارتباط با سرور", "error");
   }
   clearLoading(btn);
+}
+
+async function moveTaskFolder(taskId, folderId) {
+  const task = tasks.find((t) => t.taskId === taskId);
+  if (!task) return;
+  task.folderId = folderId;
+  renderTasks();
+  renderProgress();
+  try {
+    await apiCall("updateTaskFolder", { username, taskId, folderId });
+    showToast("کار جابه‌جا شد");
+  } catch (e) {
+    showToast("خطا در جابه‌جایی", "error");
+  }
 }
 
 async function removeTask(taskId) {
