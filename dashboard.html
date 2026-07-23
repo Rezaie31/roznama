@@ -87,7 +87,10 @@
   <!-- ===== نمودارها ===== -->
   <div class="charts-grid">
     <div class="card">
-      <h2><span class="wiggle-hover">📊</span> پیشرفت امروز</h2>
+      <div class="chart-head">
+        <h2><span class="wiggle-hover">📊</span> پیشرفت روزانه</h2>
+        <input type="date" id="day-picker" class="picker mono" />
+      </div>
       <div class="chart-box"><canvas id="daily-chart"></canvas></div>
     </div>
     <div class="card">
@@ -120,11 +123,35 @@
 
   <!-- ===== دفترچه یادداشت ===== -->
   <div class="card">
-    <h2><span class="wiggle-hover">📓</span> دفترچه یادداشت</h2>
+    <div class="chart-head">
+      <h2><span class="wiggle-hover">📓</span> دفترچه یادداشت</h2>
+      <button class="btn btn-ghost" onclick="openMyNotes()">📔 یادداشت‌های من</button>
+    </div>
+
+    <div class="completion-check" id="completion-check" style="display:none">
+      <div class="panel-label">yesterday's note — did you do it?</div>
+      <p class="reminder-text" id="completion-note-text"></p>
+      <div class="reminder-actions" id="completion-actions">
+        <button class="btn btn-primary" onclick="respondCompletion('done')"><span class="wiggle-hover">✅</span> انجامش دادم</button>
+        <button class="btn btn-ghost" onclick="respondCompletion('not_done')"><span class="wiggle-hover">❌</span> انجامش ندادم</button>
+      </div>
+      <div class="reminder-result" id="completion-result" style="display:none"></div>
+    </div>
+
     <textarea class="journal" id="today-note" placeholder="امروز چی گذشت؟ چند خط بنویس..."></textarea>
     <div class="save-row">
       <button class="btn btn-primary" onclick="saveJournal(this)">ذخیره یادداشت امروز</button>
     </div>
+  </div>
+</div>
+
+<!-- ===== آرشیو یادداشت‌ها ===== -->
+<div class="overlay" id="notes-overlay">
+  <div class="modal notes-modal">
+    <button class="modal-close" onclick="closeMyNotes()">×</button>
+    <h2>📔 یادداشت‌های من</h2>
+    <div class="notes-list" id="notes-list"></div>
+    <div class="empty-hint" id="notes-empty" style="display:none">هنوز یادداشتی ننوشتی.</div>
   </div>
 </div>
 
