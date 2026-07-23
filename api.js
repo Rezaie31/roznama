@@ -21,8 +21,18 @@ async function hashPassword(password) {
     .join("");
 }
 
+// اگه ساعت بین نیمه‌شب تا ۴ صبحه، هنوز «دیروز» حساب می‌شه
+// (برای کسایی که تا دیروقت بیدارن و کارهاشونو انجام می‌دن)
+function logicalNow() {
+  const now = new Date();
+  if (now.getHours() < 4) {
+    now.setDate(now.getDate() - 1);
+  }
+  return now;
+}
+
 function dateKey(offsetDays = 0) {
-  const d = new Date();
+  const d = logicalNow();
   d.setDate(d.getDate() + offsetDays);
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -34,6 +44,15 @@ function weekdayLabelFa(dateStr) {
   const days = ["یک", "دو", "سه", "چهار", "پنج", "جمعه", "شنبه"];
   const d = new Date(dateStr);
   return days[d.getDay()];
+}
+
+function formatTimeFromIso(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  const h = String(d.getHours()).padStart(2, "0");
+  const m = String(d.getMinutes()).padStart(2, "0");
+  return `${h}:${m}`;
 }
 
 // ===== حالت تاریک / روشن =====
